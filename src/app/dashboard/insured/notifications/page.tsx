@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Bell, CheckCircle, AlertCircle, Info, Calendar, FileText, User, Settings } from 'lucide-react';
 
 const notifications = [
@@ -12,7 +13,7 @@ const notifications = [
 ];
 
 const TypeIcon = ({ type }: { type: string }) => {
-  const icons: Record<string, JSX.Element> = {
+  const icons: Record<string, ReactNode> = {
     'alert': <AlertCircle className="w-5 h-5 text-yellow-500" />,
     'success': <CheckCircle className="w-5 h-5 text-green-500" />,
     'info': <Info className="w-5 h-5 text-blue-500" />,

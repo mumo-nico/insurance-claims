@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Image, Video, FileText, Mic, MapPin, Download, Eye, Trash2, Upload, Filter } from 'lucide-react';
 
 const evidence = [
@@ -12,7 +13,7 @@ const evidence = [
 ];
 
 const TypeIcon = ({ type }: { type: string }) => {
-  const icons: Record<string, JSX.Element> = {
+  const icons: Record<string, ReactNode> = {
     'photo': <Image className="w-5 h-5 text-blue-500" />,
     'video': <Video className="w-5 h-5 text-green-500" />,
     'audio': <Mic className="w-5 h-5 text-purple-500" />,
