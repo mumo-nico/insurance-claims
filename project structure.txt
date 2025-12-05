@@ -1,0 +1,159 @@
+insurance-claims-gis/
+├── prisma/
+│   ├── schema.prisma
+│   ├── migrations/
+│   └── seed.ts
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── globals.css
+│   │   ├── (auth)/
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx
+│   │   │   ├── register/
+│   │   │   │   └── page.tsx
+│   │   │   └── layout.tsx
+│   │   ├── dashboard/
+│   │   │   ├── insurer/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── claims/
+│   │   │   │   │   ├── page.tsx
+│   │   │   │   │   └── [id]/page.tsx
+│   │   │   │   ├── adjusters/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── analytics/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── layout.tsx
+│   │   │   ├── adjuster/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── tasks/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── schedule/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── field-tools/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── layout.tsx
+│   │   │   ├── insured/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── claim/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── documents/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── layout.tsx
+│   │   │   └── layout.tsx
+│   │   └── api/
+│   │       ├── auth/
+│   │       │   └── [...nextauth]/
+│   │       │       └── route.ts
+│   │       ├── claims/
+│   │       │   ├── route.ts
+│   │       │   ├── [id]/
+│   │       │   │   └── route.ts
+│   │       │   └── assign/
+│   │       │       └── route.ts
+│   │       ├── users/
+│   │       │   └── route.ts
+│   │       ├── photos/
+│   │       │   ├── upload/
+│   │       │   │   └── route.ts
+│   │       │   └── [id]/
+│   │       │       └── route.ts
+│   │       ├── locations/
+│   │       │   ├── nearby/
+│   │       │   │   └── route.ts
+│   │       │   └── route.ts
+│   │       ├── notifications/
+│   │       │   └── route.ts
+│   │       ├── weather/
+│   │       │   └── route.ts
+│   │       └── analytics/
+│   │           └── route.ts
+│   ├── components/
+│   │   ├── ui/
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   └── badge.tsx
+│   │   ├── dashboard/
+│   │   │   ├── insurer/
+│   │   │   │   ├── StatsOverview.tsx
+│   │   │   │   ├── ClaimsTable.tsx
+│   │   │   │   ├── AdjusterManagement.tsx
+│   │   │   │   ├── AnalyticsCharts.tsx
+│   │   │   │   └── FraudAlerts.tsx
+│   │   │   ├── adjuster/
+│   │   │   │   ├── TaskList.tsx
+│   │   │   │   ├── ScheduleView.tsx
+│   │   │   │   ├── RouteOptimizer.tsx
+│   │   │   │   ├── FieldTools.tsx
+│   │   │   │   └── ReportBuilder.tsx
+│   │   │   └── insured/
+│   │   │       ├── ClaimProgress.tsx
+│   │   │       ├── AdjusterCard.tsx
+│   │   │       ├── DocumentUpload.tsx
+│   │   │       └── Timeline.tsx
+│   │   ├── maps/
+│   │   │   ├── MapComponent.tsx
+│   │   │   ├── ClaimMarker.tsx
+│   │   │   ├── RouteMap.tsx
+│   │   │   └── HeatMap.tsx
+│   │   ├── shared/
+│   │   │   ├── Sidebar.tsx
+│   │   │   ├── Header.tsx
+│   │   │   ├── Navbar.tsx
+│   │   │   ├── WeatherWidget.tsx
+│   │   │   ├── Calendar.tsx
+│   │   │   ├── NotificationBell.tsx
+│   │   │   └── SearchBar.tsx
+│   │   ├── camera/
+│   │   │   ├── CameraCapture.tsx
+│   │   │   └── PhotoGallery.tsx
+│   │   └── forms/
+│   │       ├── ClaimForm.tsx
+│   │       ├── AssignmentForm.tsx
+│   │       └── ReportForm.tsx
+│   ├── lib/
+│   │   ├── prisma.ts
+│   │   ├── auth.ts
+│   │   ├── email.ts
+│   │   ├── storage.ts
+│   │   ├── maps/
+│   │   │   ├── mapbox.ts
+│   │   │   ├── geocoding.ts
+│   │   │   └── routing.ts
+│   │   ├── utils/
+│   │   │   ├── date.ts
+│   │   │   ├── format.ts
+│   │   │   ├── validation.ts
+│   │   │   └── geoCalculations.ts
+│   │   └── api/
+│   │       ├── weather.ts
+│   │       ├── notifications.ts
+│   │       └── analytics.ts
+│   ├── types/
+│   │   ├── index.ts
+│   │   ├── claim.ts
+│   │   ├── user.ts
+│   │   ├── location.ts
+│   │   └── notification.ts
+│   └── middleware.ts
+├── public/
+│   ├── manifest.json
+│   ├── sw.js
+│   ├── icons/
+│   │   ├── icon-192x192.png
+│   │   └── icon-512x512.png
+│   └── images/
+├── .env.example
+├── .env.local
+├── .gitignore
+├── next.config.js
+├── package.json
+├── tsconfig.json
+├── tailwind.config.ts
+├── postcss.config.js
+└── README.md

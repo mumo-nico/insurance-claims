@@ -1,0 +1,998 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Camera, MapPin, Upload, Mail, Users, FileText, X, Check, AlertCircle, Navigation, Phone, MessageSquare, DollarSign, Clock, TrendingUp, Calendar as CalendarIcon, Cloud, CloudRain, Sun, Wind, Bell, Search, Filter, ChevronDown, Star, Video, Paperclip, Download, Edit, BarChart3, AlertTriangle, CheckCircle, Menu } from 'lucide-react';
+
+const InsuranceClaimsSystem = () => {
+  const [userRole, setUserRole] = useState('insurer');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [stream, setStream] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+
+  const [claims, setClaims] = useState([
+    { id: 1, title: 'Water Damage', address: '123 Main St', status: 'pending', lat: 40.7128, lng: -74.0060, insured: 'John Doe', insuredPhone: '+1-555-0101', adjuster: null, priority: 'high', value: 15000, date: '2025-12-01', weather: 'rain' },
+    { id: 2, title: 'Fire Damage', address: '456 Oak Ave', status: 'assigned', lat: 40.7580, lng: -73.9855, insured: 'Jane Smith', insuredPhone: '+1-555-0102', adjuster: 'Mike Johnson', priority: 'urgent', value: 45000, date: '2025-12-02', weather: 'clear', appointmentDate: '2025-12-07', appointmentTime: '10:00 AM' },
+    { id: 3, title: 'Theft', address: '789 Elm St', status: 'in-progress', lat: 40.7489, lng: -73.9680, insured: 'Bob Wilson', insuredPhone: '+1-555-0103', adjuster: 'Mike Johnson', priority: 'medium', value: 8000, date: '2025-12-03', weather: 'cloudy' },
+    { id: 4, title: 'Storm Damage', address: '321 Pine Rd', status: 'completed', lat: 40.7308, lng: -73.9975, insured: 'Alice Brown', insuredPhone: '+1-555-0104', adjuster: 'Sarah Davis', priority: 'high', value: 22000, date: '2025-11-28', weather: 'storm', paidAmount: 20000 }
+  ]);
+
+  const [photos, setPhotos] = useState([
+    { id: 1, data: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzMzNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPldhdGVyIERhbWFnZSAtIEtpdGNoZW48L3RleHQ+PC9zdmc+', location: { lat: 40.7128, lng: -74.0060, accuracy: 12 }, timestamp: '2025-12-05T09:30:00', claimId: 1 },
+    { id: 2, data: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzYzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkZpcmUgRGFtYWdlIC0gTGl2aW5nIFJvb208L3RleHQ+PC9zdmc+', location: { lat: 40.7580, lng: -73.9855, accuracy: 8 }, timestamp: '2025-12-05T11:15:00', claimId: 2 }
+  ]);
+
+  const [appointments, setAppointments] = useState([
+    { id: 1, claimId: 2, date: '2025-12-07', time: '10:00 AM', location: '456 Oak Ave', insured: 'Jane Smith', type: 'inspection' },
+    { id: 2, claimId: 5, date: '2025-12-08', time: '2:00 PM', location: '789 Maple Dr', insured: 'Tom Jones', type: 'follow-up' }
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
+  const getCurrentLocation = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          });
+        }
+      );
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' },
+        audio: false 
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setShowCameraModal(true);
+      getCurrentLocation();
+    } catch (err) {
+      alert('Unable to access camera: ' + err.message);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      canvasRef.current.width = videoRef.current.videoWidth;
+      canvasRef.current.height = videoRef.current.videoHeight;
+      context.drawImage(videoRef.current, 0, 0);
+      
+      const imageData = canvasRef.current.toDataURL('image/jpeg');
+      const newPhoto = {
+        id: Date.now(),
+        data: imageData,
+        location: currentLocation,
+        timestamp: new Date().toISOString(),
+        claimId: selectedClaim?.id
+      };
+      
+      setPhotos([...photos, newPhoto]);
+      stopCamera();
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setShowCameraModal(false);
+  };
+
+  const StatusBadge = ({ status }) => {
+    const styles = {
+      'pending': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'assigned': 'bg-blue-100 text-blue-800 border-blue-300',
+      'in-progress': 'bg-purple-100 text-purple-800 border-purple-300',
+      'completed': 'bg-green-100 text-green-800 border-green-300'
+    };
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status]}`}>
+        {status.replace('-', ' ').toUpperCase()}
+      </span>
+    );
+  };
+
+  const PriorityBadge = ({ priority }) => {
+    const styles = {
+      'low': 'bg-gray-100 text-gray-700',
+      'medium': 'bg-orange-100 text-orange-700',
+      'high': 'bg-red-100 text-red-700',
+      'urgent': 'bg-red-600 text-white'
+    };
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-bold ${styles[priority]}`}>
+        {priority.toUpperCase()}
+      </span>
+    );
+  };
+
+  const WeatherIcon = ({ type }) => {
+    const icons = {
+      'rain': <CloudRain className="w-4 h-4" />,
+      'clear': <Sun className="w-4 h-4" />,
+      'cloudy': <Cloud className="w-4 h-4" />,
+      'storm': <Wind className="w-4 h-4" />
+    };
+    return icons[type] || <Cloud className="w-4 h-4" />;
+  };
+
+  // INSURER DASHBOARD
+  const InsurerDashboard = () => (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-600 text-sm font-medium">Total Claims</p>
+              <h3 className="text-3xl font-bold text-gray-800 mt-1">24</h3>
+              <p className="text-green-600 text-xs mt-2">↑ 12% from last month</p>
+            </div>
+            <FileText className="w-8 h-8 text-blue-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-600 text-sm font-medium">Pending Review</p>
+              <h3 className="text-3xl font-bold text-gray-800 mt-1">8</h3>
+              <p className="text-yellow-600 text-xs mt-2">Needs attention</p>
+            </div>
+            <Clock className="w-8 h-8 text-yellow-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-600 text-sm font-medium">In Progress</p>
+              <h3 className="text-3xl font-bold text-gray-800 mt-1">12</h3>
+              <p className="text-purple-600 text-xs mt-2">6 due this week</p>
+            </div>
+            <TrendingUp className="w-8 h-8 text-purple-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-600 text-sm font-medium">Total Value</p>
+              <h3 className="text-3xl font-bold text-gray-800 mt-1">$1.2M</h3>
+              <p className="text-gray-600 text-xs mt-2">Active claims</p>
+            </div>
+            <DollarSign className="w-8 h-8 text-green-500" />
+          </div>
+        </div>
+      </div>
+
+      {/* Map and Recent Claims */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Map */}
+        <div className="lg:col-span-2 bg-white rounded-lg shadow">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h3 className="font-bold text-lg">Claims Map</h3>
+            <div className="flex gap-2">
+              <button className="text-sm px-3 py-1 bg-gray-100 rounded-lg hover:bg-gray-200">
+                <Filter className="w-4 h-4 inline mr-1" />
+                Filter
+              </button>
+              <button onClick={getCurrentLocation} className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">
+                <Navigation className="w-4 h-4 inline mr-1" />
+                Locate
+              </button>
+            </div>
+          </div>
+          <div className="relative h-96 bg-gradient-to-br from-blue-50 to-green-50">
+            {claims.map((claim, idx) => (
+              <div
+                key={claim.id}
+                style={{
+                  position: 'absolute',
+                  left: `${15 + idx * 20}%`,
+                  top: `${20 + idx * 15}%`
+                }}
+                className="cursor-pointer transform hover:scale-110 transition-transform group"
+                onClick={() => setSelectedClaim(claim)}
+              >
+                <MapPin className={`w-8 h-8 ${claim.priority === 'urgent' ? 'text-red-600' : claim.priority === 'high' ? 'text-orange-600' : 'text-blue-600'} drop-shadow-lg`} fill="currentColor" />
+                <div className="absolute -top-8 left-8 bg-white px-2 py-1 rounded shadow-lg text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                  {claim.address}
+                </div>
+              </div>
+            ))}
+            {currentLocation && (
+              <div style={{ position: 'absolute', left: '50%', top: '50%' }} className="transform -translate-x-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 bg-blue-600 rounded-full border-4 border-white shadow-lg animate-pulse" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Weather & Alerts */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="font-bold text-lg mb-4">Weather Alerts</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg">
+                <CloudRain className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Heavy Rain Expected</p>
+                  <p className="text-xs text-gray-600">Dec 7-8, Downtown area</p>
+                  <p className="text-xs text-yellow-700 mt-1">Possible claim spike</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                <Wind className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Wind Advisory</p>
+                  <p className="text-xs text-gray-600">Dec 9, Northern region</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="font-bold text-lg mb-4">Fraud Alerts</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Claim #1847</p>
+                  <p className="text-xs text-gray-600">Multiple claims same location</p>
+                  <button className="text-xs text-red-700 font-semibold mt-1">Review →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Claims Table */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h3 className="font-bold text-lg">Recent Claims</h3>
+          <div className="flex gap-2">
+            <button className="text-sm px-3 py-1 bg-gray-100 rounded-lg hover:bg-gray-200">
+              <Search className="w-4 h-4 inline mr-1" />
+              Search
+            </button>
+            <button className="text-sm px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Export Report
+            </button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Claim ID</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Insured</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Adjuster</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Value</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {claims.map(claim => (
+                <tr key={claim.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">#{claim.id}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{claim.title}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{claim.insured}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{claim.adjuster || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">${claim.value.toLocaleString()}</td>
+                  <td className="px-6 py-4"><StatusBadge status={claim.status} /></td>
+                  <td className="px-6 py-4"><PriorityBadge priority={claim.priority} /></td>
+                  <td className="px-6 py-4">
+                    <button onClick={() => setSelectedClaim(claim)} className="text-blue-600 hover:text-blue-800 text-sm font-semibold">
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ADJUSTER DASHBOARD
+  const AdjusterDashboard = () => (
+    <div className="space-y-6">
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
+          <p className="text-blue-100 text-sm font-medium">Today's Tasks</p>
+          <h3 className="text-4xl font-bold mt-1">5</h3>
+        </div>
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow p-6">
+          <p className="text-purple-100 text-sm font-medium">In Progress</p>
+          <h3 className="text-4xl font-bold mt-1">3</h3>
+        </div>
+        <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow p-6">
+          <p className="text-green-100 text-sm font-medium">Completed</p>
+          <h3 className="text-4xl font-bold mt-1">12</h3>
+        </div>
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow p-6">
+          <p className="text-orange-100 text-sm font-medium">Next Visit</p>
+          <h3 className="text-2xl font-bold mt-1">10:00 AM</h3>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Today's Schedule */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-bold text-lg">Today's Schedule</h3>
+              <button onClick={() => setShowCalendar(true)} className="text-sm px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">
+                <CalendarIcon className="w-4 h-4 inline mr-1" />
+                View Calendar
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              {appointments.map(apt => (
+                <div key={apt.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-bold text-lg text-blue-600">{apt.time}</span>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold">{apt.type}</span>
+                      </div>
+                      <p className="font-semibold text-gray-800">{apt.insured}</p>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                        <MapPin className="w-4 h-4" />
+                        <span>{apt.location}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200">
+                        <Navigation className="w-4 h-4" />
+                      </button>
+                      <button className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">
+                        <Phone className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Route Map */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-bold text-lg">Today's Route</h3>
+              <div className="text-sm text-gray-600">
+                <span className="font-semibold">Total:</span> 45 mins drive
+              </div>
+            </div>
+            <div className="relative h-64 bg-gradient-to-br from-green-50 to-blue-50 p-4">
+              <div className="absolute" style={{ left: '20%', top: '30%' }}>
+                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold shadow-lg">1</div>
+                <div className="text-xs font-semibold mt-1">10:00 AM</div>
+              </div>
+              <div className="absolute" style={{ left: '50%', top: '45%' }}>
+                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold shadow-lg">2</div>
+                <div className="text-xs font-semibold mt-1">2:00 PM</div>
+              </div>
+              <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                <path d="M 20% 30% Q 35% 20% 50% 45%" stroke="#3B82F6" strokeWidth="3" fill="none" strokeDasharray="5,5" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions & Field Tools */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="font-bold text-lg mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={startCamera} className="flex flex-col items-center gap-2 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                <Camera className="w-6 h-6 text-blue-600" />
+                <span className="text-xs font-semibold text-gray-700">Take Photo</span>
+              </button>
+              <button className="flex flex-col items-center gap-2 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
+                <Video className="w-6 h-6 text-green-600" />
+                <span className="text-xs font-semibold text-gray-700">Record</span>
+              </button>
+              <button onClick={getCurrentLocation} className="flex flex-col items-center gap-2 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
+                <MapPin className="w-6 h-6 text-purple-600" />
+                <span className="text-xs font-semibold text-gray-700">Check In</span>
+              </button>
+              <button className="flex flex-col items-center gap-2 p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
+                <FileText className="w-6 h-6 text-orange-600" />
+                <span className="text-xs font-semibold text-gray-700">Report</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="font-bold text-lg mb-4">Weather Today</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Sun className="w-8 h-8 text-yellow-500" />
+                  <div>
+                    <p className="font-bold text-2xl">72°F</p>
+                    <p className="text-xs text-gray-600">Clear skies</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-600 space-y-1">
+                <div className="flex justify-between">
+                  <span>Humidity:</span>
+                  <span className="font-semibold">65%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Wind:</span>
+                  <span className="font-semibold">8 mph</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="font-bold text-lg mb-4">Performance</h3>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">This Week</span>
+                  <span className="font-bold text-gray-800">12/15 claims</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '80%' }}></div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" fill="currentColor" />
+                <span className="font-bold text-lg">4.8</span>
+                <span className="text-sm text-gray-600">Average Rating</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* My Active Claims */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-4 border-b">
+          <h3 className="font-bold text-lg">My Active Claims</h3>
+        </div>
+        <div className="divide-y">
+          {claims.filter(c => c.adjuster === 'Mike Johnson').map(claim => (
+            <div key={claim.id} className="p-4 hover:bg-gray-50">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h4 className="font-bold text-gray-800">{claim.title}</h4>
+                    <StatusBadge status={claim.status} />
+                    <PriorityBadge priority={claim.priority} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      {claim.insured}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      {claim.address}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <WeatherIcon type={claim.weather} />
+                      {claim.date}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4" />
+                      ${claim.value.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                    Open
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // INSURED DASHBOARD
+  const InsuredDashboard = () => {
+    const myClaim = claims[1]; // Example: Jane Smith's claim
+    const progress = myClaim.status === 'completed' ? 100 : myClaim.status === 'in-progress' ? 60 : myClaim.status === 'assigned' ? 40 : 20;
+
+    return (
+      <div className="space-y-6">
+        {/* Welcome Banner */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-2">Welcome back, {myClaim.insured}</h2>
+          <p className="text-blue-100">Your claim is being processed. Here's the latest update.</p>
+        </div>
+
+        {/* Main Claim Status */}
+        <div className="bg-white rounded-lg shadow-lg">
+          <div className="p-6 border-b">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">{myClaim.title}</h3>
+                <p className="text-gray-600">{myClaim.address}</p>
+                <p className="text-sm text-gray-500 mt-1">Claim ID: #{myClaim.id} • Filed: {myClaim.date}</p>
+              </div>
+              <StatusBadge status={myClaim.status} />
+            </div>
+          </div>
+
+          {/* Progress Tracker */}
+          <div className="p-6 bg-gray-50">
+            <h4 className="font-bold text-gray-800 mb-4">Claim Progress</h4>
+            <div className="relative">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-semibold text-gray-700">Progress</span>
+                <span className="text-sm font-bold text-blue-600">{progress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+                <div className="bg-blue-600 h-3 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2">
+                <div className="text-center">
+                  <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-2 ${progress >= 20 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700">Submitted</p>
+                </div>
+                <div className="text-center">
+                  <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-2 ${progress >= 40 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700">Assigned</p>
+                </div>
+                <div className="text-center">
+                  <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-2 ${progress >= 60 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700">Inspecting</p>
+                </div>
+                <div className="text-center">
+                  <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-2 ${progress >= 100 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                    <CheckCircle className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700">Completed</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Claim Details */}
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-bold text-gray-800 mb-3">Claim Information</h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Claim Value:</span>
+                  <span className="font-bold text-gray-800">${myClaim.value.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Priority:</span>
+                  <PriorityBadge priority={myClaim.priority} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Weather Conditions:</span>
+                  <span className="font-semibold text-gray-800 flex items-center gap-1">
+                    <WeatherIcon type={myClaim.weather} />
+                    {myClaim.weather}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-gray-800 mb-3">Your Adjuster</h4>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  {myClaim.adjuster?.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div>
+                  <p className="font-bold text-gray-800">{myClaim.adjuster}</p>
+                  <p className="text-xs text-gray-500">Loss Adjuster</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold flex items-center justify-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  Call
+                </button>
+                <button className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold flex items-center justify-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Message
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Appointment & Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Next Appointment */}
+          {myClaim.appointmentDate && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-blue-600" />
+                Next Appointment
+              </h4>
+              <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="text-2xl font-bold text-blue-700">{myClaim.appointmentTime}</p>
+                    <p className="text-sm text-gray-600">{myClaim.appointmentDate}</p>
+                  </div>
+                  <span className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">CONFIRMED</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+                  <MapPin className="w-4 h-4" />
+                  <span>{myClaim.address}</span>
+                </div>
+                <button className="w-full px-4 py-2 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 text-sm font-semibold">
+                  Reschedule Appointment
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Evidence */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Camera className="w-5 h-5 text-green-600" />
+              Upload Evidence
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">Add photos or documents to support your claim</p>
+            <div className="space-y-3">
+              <button onClick={startCamera} className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2">
+                <Camera className="w-5 h-5" />
+                Take Photo
+              </button>
+              <label className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2 cursor-pointer">
+                <Upload className="w-5 h-5" />
+                Upload Files
+                <input type="file" multiple className="hidden" />
+              </label>
+              <button className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold flex items-center justify-center gap-2">
+                <Paperclip className="w-5 h-5" />
+                Attach Documents
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Evidence Gallery */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6 border-b">
+            <h4 className="font-bold text-gray-800">Evidence Gallery</h4>
+          </div>
+          <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            {photos.filter(p => p.claimId === myClaim.id).map(photo => (
+              <div key={photo.id} className="relative group">
+                <img src={photo.data} alt="Evidence" className="w-full h-32 object-cover rounded-lg border-2 border-gray-200" />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-lg transition-all flex items-center justify-center">
+                  <button className="opacity-0 group-hover:opacity-100 p-2 bg-white rounded-full">
+                    <Download className="w-4 h-4 text-gray-700" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg h-32 flex items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+              <div className="text-center">
+                <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                <p className="text-xs text-gray-500">Add More</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Documents & Timeline */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Documents */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b">
+              <h4 className="font-bold text-gray-800">Documents</h4>
+            </div>
+            <div className="p-6 space-y-3">
+              <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="font-semibold text-sm text-gray-800">Claim Report.pdf</p>
+                    <p className="text-xs text-gray-500">Updated 2 days ago</p>
+                  </div>
+                </div>
+                <button className="p-2 hover:bg-gray-200 rounded-lg">
+                  <Download className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="font-semibold text-sm text-gray-800">Policy Document.pdf</p>
+                    <p className="text-xs text-gray-500">Your coverage details</p>
+                  </div>
+                </div>
+                <button className="p-2 hover:bg-gray-200 rounded-lg">
+                  <Download className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b">
+              <h4 className="font-bold text-gray-800">Activity Timeline</h4>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="w-0.5 h-full bg-gray-200 mt-2"></div>
+                </div>
+                <div className="flex-1 pb-4">
+                  <p className="font-semibold text-sm text-gray-800">Adjuster Assigned</p>
+                  <p className="text-xs text-gray-500">{myClaim.adjuster} has been assigned to your claim</p>
+                  <p className="text-xs text-gray-400 mt-1">Dec 3, 2025</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="w-0.5 h-full bg-gray-200 mt-2"></div>
+                </div>
+                <div className="flex-1 pb-4">
+                  <p className="font-semibold text-sm text-gray-800">Claim Submitted</p>
+                  <p className="text-xs text-gray-500">Your claim has been received and is under review</p>
+                  <p className="text-xs text-gray-400 mt-1">Dec 2, 2025</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Top Navigation */}
+      <div className="bg-white shadow-md sticky top-0 z-40">
+        <div className="px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
+              <Menu className="w-6 h-6 text-gray-700" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Insurance Claims Portal</h1>
+              <p className="text-xs text-gray-500">Comprehensive GIS Management System</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="relative p-2 hover:bg-gray-100 rounded-lg">
+              <Bell className="w-5 h-5 text-gray-700" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            <select 
+              value={userRole} 
+              onChange={(e) => setUserRole(e.target.value)}
+              className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700"
+            >
+              <option value="insurer">Insurance Company</option>
+              <option value="adjuster">Loss Adjuster</option>
+              <option value="insured">Insured Party</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex">
+        {/* Sidebar */}
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static w-64 h-screen bg-white shadow-lg z-30 transition-transform`}>
+          <div className="p-6 space-y-2">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors ${activeTab === 'dashboard' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              <BarChart3 className="w-5 h-5" />
+              Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('claims')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors ${activeTab === 'claims' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              <FileText className="w-5 h-5" />
+              Claims
+            </button>
+            <button
+              onClick={() => setActiveTab('map')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors ${activeTab === 'map' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              <MapPin className="w-5 h-5" />
+              Map View
+            </button>
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors ${activeTab === 'calendar' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              <CalendarIcon className="w-5 h-5" />
+              Calendar
+            </button>
+            <button
+              onClick={() => setActiveTab('photos')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors ${activeTab === 'photos' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              <Camera className="w-5 h-5" />
+              Evidence ({photos.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('messages')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors ${activeTab === 'messages' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              <MessageSquare className="w-5 h-5" />
+              Messages
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 p-6 overflow-auto">
+          {activeTab === 'dashboard' && (
+            <>
+              {userRole === 'insurer' && <InsurerDashboard />}
+              {userRole === 'adjuster' && <AdjusterDashboard />}
+              {userRole === 'insured' && <InsuredDashboard />}
+            </>
+          )}
+
+          {activeTab === 'map' && (
+            <div className="bg-white rounded-lg shadow-lg">
+              <div className="p-6 border-b flex justify-between items-center">
+                <h2 className="text-xl font-bold">Interactive Claims Map</h2>
+                <button onClick={getCurrentLocation} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <Navigation className="w-4 h-4" />
+                  My Location
+                </button>
+              </div>
+              <div className="relative h-[600px] bg-gradient-to-br from-blue-50 via-green-50 to-yellow-50 p-4">
+                {claims.map((claim, idx) => (
+                  <div
+                    key={claim.id}
+                    style={{
+                      position: 'absolute',
+                      left: `${15 + idx * 18}%`,
+                      top: `${20 + idx * 12}%`
+                    }}
+                    className="cursor-pointer transform hover:scale-125 transition-all group"
+                    onClick={() => setSelectedClaim(claim)}
+                  >
+                    <MapPin 
+                      className={`w-10 h-10 ${
+                        claim.priority === 'urgent' ? 'text-red-600' : 
+                        claim.priority === 'high' ? 'text-orange-600' : 
+                        'text-blue-600'
+                      } drop-shadow-2xl`} 
+                      fill="currentColor" 
+                    />
+                    <div className="absolute -top-10 left-10 bg-white px-3 py-2 rounded-lg shadow-xl text-sm font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="font-bold">{claim.title}</div>
+                      <div className="text-xs text-gray-600">{claim.address}</div>
+                    </div>
+                  </div>
+                ))}
+                {currentLocation && (
+                  <div style={{ position: 'absolute', left: '50%', top: '50%' }} className="transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-5 h-5 bg-blue-600 rounded-full border-4 border-white shadow-2xl animate-pulse" />
+                    <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap shadow-lg">
+                      Your Location
+                    </div>
+                  </div>
+                )}
+              </div>
+              {selectedClaim && (
+                <div className="p-6 bg-blue-50 border-t-4 border-blue-600">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedClaim.title}</h3>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><span className="text-gray-600">Address:</span> <span className="font-semibold">{selectedClaim.address}</span></div>
+                        <div><span className="text-gray-600">Insured:</span> <span className="font-semibold">{selectedClaim.insured}</span></div>
+                        <div><span className="text-gray-600">Value:</span> <span className="font-semibold">${selectedClaim.value.toLocaleString()}</span></div>
+                        <div><span className="text-gray-600">Coordinates:</span> <span className="font-semibold">{selectedClaim.lat.toFixed(4)}, {selectedClaim.lng.toFixed(4)}</span></div>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <StatusBadge status={selectedClaim.status} />
+                        <PriorityBadge priority={selectedClaim.priority} />
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedClaim(null)} className="text-gray-500 hover:text-gray-700">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'calendar' && (
+            <div className="bg-white rounded-lg shadow-lg">
+              <div className="p-6 border-b">
+                <h2 className="text-xl font-bold">Appointments & Schedule</h2>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-7 gap-2 mb-4">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="text-center font-bold text-gray-700 py-2">{day}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {[...Array(35)].map((_, i) => {
+                    const dayNum = i - 2;
+                    const hasAppointment = dayNum === 7 || dayNum === 8;
+                    return (
+                      <div key={i} className={`aspect-square border rounded-lg p-2 ${dayNum < 1 ? 'bg-gray-50' : 'bg-white hover:bg-blue-50 cursor-pointer'} ${hasAppointment ? 'border-blue-500 bg-blue-100' : 'border-gray-200'}`}>
+                        {dayNum > 0 && (
+                          <>
+                            <div className="text-sm font-semibold text-gray-700">{dayNum}</div>
+                            {hasAppointment && (
+                              <div className="mt-1">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-6">
+                  <h3 className="font-bold text-gray-800 mb-4">Upcoming Appointments</h3>
+                  <div className="space-y-3">
+                    {appointments.map(apt => (
+                      <div key={apt.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-lg font-bold text-blue-600">{apt.time}</span>
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold">{apt.date}</span>
+                            </div>
+                            <p className="font-semibold text-gray-800">{apt.insured}</p

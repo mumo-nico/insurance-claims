@@ -1,0 +1,65 @@
+# Core Next.js and React
+npm install next@14.1.0 react@18.2.0 react-dom@18.2.0
+
+# TypeScript
+npm install -D typescript @types/node @types/react @types/react-dom
+
+# Database & ORM
+npm install @prisma/client@5.8.0
+npm install -D prisma@5.8.0
+
+# Authentication
+npm install next-auth@4.24.5 bcrypt@5.1.1
+npm install -D @types/bcrypt
+
+
+# Date & Calendar
+npm install date-fns@3.2.0 react-day-picker@8.10.0
+
+# UI Components (Radix UI)
+npm install @radix-ui/react-dialog@1.0.5 @radix-ui/react-dropdown-menu@2.0.6 @radix-ui/react-select@2.0.0 @radix-ui/react-tabs@1.0.4 @radix-ui/react-toast@1.1.5 @radix-ui/react-avatar@1.0.4 @radix-ui/react-popover@1.0.7
+
+# Charts & Visualization
+npm install recharts@2.10.4
+
+# Icons
+npm install lucide-react@0.316.0
+
+# Styling Utilities
+npm install class-variance-authority@0.7.0 clsx@2.1.0 tailwind-merge@2.2.1
+
+# Email Service
+npm install resend@3.2.0
+
+# AWS S3 (File Storage)
+npm install @aws-sdk/client-s3@3.496.0 @aws-sdk/s3-request-presigner@3.496.0
+
+# HTTP Client & File Upload
+npm install axios@1.6.5 react-dropzone@14.2.3 sharp@0.33.2
+
+# State Management & Data Fetching
+npm install zustand@4.5.0 react-query@3.39.3
+
+# Form Validation
+npm install zod@3.22.4
+
+# Tailwind CSS
+npm install -D tailwindcss@3.4.1 postcss@8.4.33 autoprefixer@10.4.17
+
+# ESLint
+npm install -D eslint@8 eslint-config-next@14.1.0
+
+# Development Tools
+npm install -D ts-node@10.9.2
+
+
+
+# Install Leaflet
+npm install leaflet react-leaflet
+npm install -D @types/leaflet
+
+# For geocoding (address → coordinates)
+npm install leaflet-geosearch
+
+# For routing (directions)
+npm install leaflet-routing-machine

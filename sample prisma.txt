@@ -1,0 +1,337 @@
+// prisma/schema.prisma
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis(version: "3.4.0")]
+}
+
+enum Role {
+  INSURER
+  ADJUSTER
+  INSURED
+  ADMIN
+}
+
+enum ClaimStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ASSIGNED
+  IN_PROGRESS
+  AWAITING_INFO
+  COMPLETED
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum ClaimPriority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ClaimType {
+  PROPERTY_DAMAGE
+  AUTO_ACCIDENT
+  THEFT
+  FIRE
+  WATER_DAMAGE
+  STORM_DAMAGE
+  LIABILITY
+  MEDICAL
+  OTHER
+}
+
+enum NotificationType {
+  CLAIM_SUBMITTED
+  CLAIM_ASSIGNED
+  CLAIM_STATUS_CHANGED
+  ADJUSTER_ASSIGNED
+  APPOINTMENT_SCHEDULED
+  DOCUMENT_UPLOADED
+  PAYMENT_PROCESSED
+  MESSAGE_RECEIVED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          Role
+  phone         String?
+  avatar        String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  claimsAsInsurer   Claim[]         @relation("InsurerClaims")
+  claimsAsInsured   Claim[]         @relation("InsuredClaims")
+  claimsAsAdjuster  Claim[]         @relation("AdjusterClaims")
+  locations         UserLocation[]
+  notifications     Notification[]
+  messages          Message[]
+  assignments       Assignment[]
+  activities        Activity[]
+  
+  // Adjuster-specific fields
+  adjusterProfile   AdjusterProfile?
+  
+  @@index([email])
+  @@index([role])
+}
+
+model AdjusterProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber     String?
+  specializations   String[]
+  rating            Float?   @default(0)
+  totalClaims       Int      @default(0)
+  activeClaimsCount Int      @default(0)
+  maxActiveClaims   Int      @default(10)
+  territory         String?
+  availability      Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model Claim {
+  id                String        @id @default(cuid())
+  claimNumber       String        @unique
+  policyNumber      String
+  claimType         ClaimType
+  status            ClaimStatus   @default(SUBMITTED)
+  priority          ClaimPriority @default(MEDIUM)
+  title             String
+  description       String        @db.Text
+  incidentDate      DateTime
+  reportedDate      DateTime      @default(now())
+  estimatedValue    Decimal       @db.Decimal(10, 2)
+  approvedAmount    Decimal?      @db.Decimal(10, 2)
+  
+  // Location data
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  latitude          Decimal       @db.Decimal(10, 8)
+  longitude         Decimal       @db.Decimal(11, 8)
+  location          Unsupported("geometry(Point, 4326)")? // PostGIS point
+  
+  // Relationships
+  insurerId         String
+  insurer           User          @relation("InsurerClaims", fields: [insurerId], references: [id])
+  insuredId         String
+  insured           User          @relation("InsuredClaims", fields: [insuredId], references: [id])
+  adjusterId        String?
+  adjuster          User?         @relation("AdjusterClaims", fields: [adjusterId], references: [id])
+  
+  // Related data
+  photos            Photo[]
+  documents         Document[]
+  assignments       Assignment[]
+  activities        Activity[]
+  messages          Message[]
+  appointments      Appointment[]
+  weather           WeatherData?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@index([claimNumber])
+  @@index([status])
+  @@index([priority])
+  @@index([insurerId])
+  @@index([insuredId])
+  @@index([adjusterId])
+  @@index([incidentDate])
+  @@index([location], type: Gist)
+}
+
+model Photo {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  url             String
+  thumbnailUrl    String?
+  caption         String?
+  latitude        Decimal? @db.Decimal(10, 8)
+  longitude       Decimal? @db.Decimal(11, 8)
+  location        Unsupported("geometry(Point, 4326)")?
+  accuracy        Float?   // GPS accuracy in meters
+  takenAt         DateTime @default(now())
+  uploadedBy      String
+  metadata        Json?    // EXIF data, device info, etc.
+  createdAt       DateTime @default(now())
+  
+  @@index([claimId])
+  @@index([location], type: Gist)
+}
+
+model Document {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  type            String   // "report", "receipt", "police_report", "medical", etc.
+  name            String
+  url             String
+  mimeType        String
+  size            Int
+  uploadedBy      String
+  createdAt       DateTime @default(now())
+  
+  @@index([claimId])
+  @@index([type])
+}
+
+model Assignment {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  adjusterId      String
+  adjuster        User     @relation(fields: [adjusterId], references: [id])
+  assignedBy      String
+  assignedAt      DateTime @default(now())
+  acceptedAt      DateTime?
+  completedAt     DateTime?
+  notes           String?  @db.Text
+  
+  @@index([claimId])
+  @@index([adjusterId])
+}
+
+model Appointment {
+  id              String    @id @default(cuid())
+  claimId         String
+  claim           Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  scheduledDate   DateTime
+  scheduledTime   String
+  duration        Int       @default(60) // minutes
+  status          String    @default("scheduled") // scheduled, confirmed, completed, cancelled
+  notes           String?   @db.Text
+  checkedInAt     DateTime?
+  checkedOutAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([claimId])
+  @@index([scheduledDate])
+}
+
+model UserLocation {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  latitude        Decimal  @db.Decimal(10, 8)
+  longitude       Decimal  @db.Decimal(11, 8)
+  location        Unsupported("geometry(Point, 4326)")
+  accuracy        Float?
+  timestamp       DateTime @default(now())
+  
+  @@index([userId])
+  @@index([timestamp])
+  @@index([location], type: Gist)
+}
+
+model Activity {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  action          String   // "status_changed", "comment_added", "document_uploaded", etc.
+  description     String
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  
+  @@index([claimId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  claimId         String
+  claim           Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  senderId        String
+  sender          User     @relation(fields: [senderId], references: [id])
+  recipientRole   Role?    // If null, sent to all parties
+  content         String   @db.Text
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  
+  @@index([claimId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            NotificationType
+  title           String
+  message         String
+  link            String?
+  isRead          Boolean          @default(false)
+  metadata        Json?
+  createdAt       DateTime         @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model WeatherData {
+  id              String   @id @default(cuid())
+  claimId         String   @unique
+  claim           Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  date            DateTime
+  temperature     Float?
+  conditions      String?  // "sunny", "rainy", "stormy", etc.
+  precipitation   Float?   // in mm
+  windSpeed       Float?   // in km/h
+  humidity        Float?   // percentage
+  alerts          Json?    // Weather alerts for that date/location
+  fetchedAt       DateTime @default(now())
+  
+  @@index([claimId])
+  @@index([date])
+}
+
+model Territory {
+  id              String   @id @default(cuid())
+  name            String
+  boundary        Unsupported("geometry(Polygon, 4326)")
+  assignedAdjusters String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([boundary], type: Gist)
+}
+
+model RiskZone {
+  id              String   @id @default(cuid())
+  name            String
+  type            String   // "flood", "fire", "earthquake", etc.
+  riskLevel       String   // "low", "medium", "high", "critical"
+  boundary        Unsupported("geometry(Polygon, 4326)")
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([boundary], type: Gist)
+  @@index([type])
+}
