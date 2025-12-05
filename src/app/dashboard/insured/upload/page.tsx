@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Upload, Image, FileText, Video, X, CheckCircle, AlertCircle } from 'lucide-react';
 
 const uploadedFiles = [
@@ -19,7 +20,7 @@ const requiredDocs = [
 ];
 
 const TypeIcon = ({ type }: { type: string }) => {
-  const icons: Record<string, JSX.Element> = {
+  const icons: Record<string, ReactNode> = {
     'image': <Image className="w-5 h-5 text-blue-500" />,
     'video': <Video className="w-5 h-5 text-green-500" />,
     'document': <FileText className="w-5 h-5 text-orange-500" />,
