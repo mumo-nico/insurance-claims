@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 import {
   BarChart3, FileText, MapPin, Calendar, Camera, MessageSquare,
   Users, Settings, TrendingUp, DollarSign, Clock, AlertTriangle,
-  Home, Navigation, Video, Star, Bell, Shield
+  Home, Navigation, Video, Star, Bell, Shield, Briefcase, UserPlus,
+  Target, ClipboardList, Scale, Send
 } from 'lucide-react';
 
 type SidebarItem = {
@@ -52,22 +53,57 @@ const insuredItems: SidebarItem[] = [
   { name: 'Settings', href: '/dashboard/insured/settings', icon: Settings },
 ];
 
+const hrItems: SidebarItem[] = [
+  { name: 'Dashboard', href: '/dashboard/hr', icon: BarChart3 },
+  { name: 'Adjuster', href: '/dashboard/hr/adjusters', icon: Users },
+  { name: 'Availability', href: '/dashboard/hr/availability', icon: Calendar },
+  { name: 'Live Tracking', href: '/dashboard/hr/map', icon: MapPin },
+  { name: 'Territory', href: '/dashboard/hr/territories', icon: Target },
+  { name: 'Assignment', href: '/dashboard/hr/assignments', icon: ClipboardList, badge: '8' },
+  { name: 'Analytics', href: '/dashboard/hr/performance', icon: TrendingUp },
+  { name: 'Workload', href: '/dashboard/hr/workload', icon: Scale },
+  { name: 'Attendance', href: '/dashboard/hr/attendance', icon: Clock },
+  { name: 'Communications', href: '/dashboard/hr/communications', icon: Send },
+  { name: 'Reports', href: '/dashboard/hr/reports', icon: FileText },
+  { name: 'Settings', href: '/dashboard/hr/settings', icon: Settings },
+];
+
 interface SidebarProps {
-  role: 'insurer' | 'adjuster' | 'insured';
+  role: 'insurer' | 'adjuster' | 'insured' | 'hr';
   isOpen?: boolean;
   onClose?: () => void;
 }
 
 export default function Sidebar({ role, isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname();
-  
-  const items = role === 'insurer' ? insurerItems : role === 'adjuster' ? adjusterItems : insuredItems;
-  const roleTitle = role === 'insurer' ? 'Insurance Company' : role === 'adjuster' ? 'Loss Adjuster' : 'Policyholder';
+
+  const getItems = () => {
+    switch (role) {
+      case 'insurer': return insurerItems;
+      case 'adjuster': return adjusterItems;
+      case 'insured': return insuredItems;
+      case 'hr': return hrItems;
+      default: return insurerItems;
+    }
+  };
+
+  const getRoleTitle = () => {
+    switch (role) {
+      case 'insurer': return 'Insurance Company';
+      case 'adjuster': return 'Loss Adjuster';
+      case 'insured': return 'Policyholder';
+      case 'hr': return 'HR Management';
+      default: return 'Dashboard';
+    }
+  };
+
+  const items = getItems();
+  const roleTitle = getRoleTitle();
 
   return (
     <aside className={`
       ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      lg:translate-x-0 fixed top-0 left-0 w-64 h-screen bg-[#1e3a5f] shadow-xl z-30 transition-transform
+      lg:translate-x-0 fixed top-0 left-0 w-64 h-screen bg-[#081527] shadow-xl z-30 transition-transform
     `}>
       {/* Logo */}
       <div className="p-6 border-b border-white/10">
@@ -87,7 +123,7 @@ export default function Sidebar({ role, isOpen = true, onClose }: SidebarProps) 
         {items.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
-          
+
           return (
             <Link
               key={item.href}

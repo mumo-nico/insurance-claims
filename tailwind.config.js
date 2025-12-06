@@ -10,8 +10,8 @@ module.exports = {
       colors: {
         // Primary theme colors
         navy: {
-          DEFAULT: '#1e3a5f',
-          dark: '#152a45',
+          DEFAULT: '#081527ff',
+          dark: '#081527ff',
           light: '#2a4a73',
         },
         sky: {
